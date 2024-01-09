@@ -68,7 +68,7 @@ enum eHID {
     PS3_01_REPORT_LEN = 0x30,
 
     PS4_02_REPORT_ID = 0x02,
-    PS4_11_REPORT_ID = 0x11,
+    PS4_11_REPORT_ID = 0x31,
     PS4_11_REPORT_LEN = 0x4D,
     // }}}
 };

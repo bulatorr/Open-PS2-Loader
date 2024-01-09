@@ -10,7 +10,7 @@
 #define DS34_VID            0x054C // Sony Corporation
 #define DS3_PID             0x0268 // PS3 Controller
 #define DS4_PID             0x05C4 // PS4 Controller
-#define DS4_PID_SLIM        0x09CC // PS4 Slim Controller
+#define DS4_PID_SLIM        0x0CE6 // PS4 Slim Controller /////// DUALSENSE fix
 #define GUITAR_HERO_PS3_PID 0x0100 // PS3 Guitar Hero Guitar
 #define ROCK_BAND_PS3_PID   0x0200 // PS3 Rock Band Guitar
 
@@ -231,10 +231,14 @@ enum DS4DpadDirections {
 struct ds4report
 {
     uint8_t ReportID;
+    uint8_t Reserved1;    // Unknown
     uint8_t LeftStickX;   // left Joystick X axis 0 - 255, 128 is mid
     uint8_t LeftStickY;   // left Joystick Y axis 0 - 255, 128 is mid
     uint8_t RightStickX;  // right Joystick X axis 0 - 255, 128 is mid
     uint8_t RightStickY;  // right Joystick Y axis 0 - 255, 128 is mid
+    uint8_t PressureL2;   // digital Pad L2 button Pressure 0 - 255
+    uint8_t PressureR2;   // digital Pad R2 button Pressure 0 - 255
+    uint8_t Counter1; // counts up by 1 per report
     uint8_t Dpad     : 4; // hat format, 0x08 is released, 0=N, 1=NE, 2=E, 3=SE, 4=S, 5=SW, 6=W, 7=NW
     uint8_t Square   : 1;
     uint8_t Cross    : 1;
@@ -250,27 +254,16 @@ struct ds4report
     uint8_t R3       : 1;
     uint8_t PSButton : 1;
     uint8_t TPad     : 1;
-    uint8_t Counter1 : 6; // counts up by 1 per report
-    uint8_t PressureL2;   // digital Pad L2 button Pressure 0 - 255
-    uint8_t PressureR2;   // digital Pad R2 button Pressure 0 - 255
+    uint8_t Microphone  : 1;
     uint8_t Counter2;
-    uint8_t Counter3;
-    uint8_t Battery; // battery level from 0x00 to 0xff
+    uint8_t Reserved2[5];        // Unknown
+    int16_t GyroX;
+    int16_t GyroY;
+    int16_t GyroZ;
     int16_t AccelX;
     int16_t AccelY;
     int16_t AccelZ;
-    int16_t GyroZ;
-    int16_t GyroY;
-    int16_t GyroX;
-    uint8_t Reserved1[5];    // Unknown
-    uint8_t Power       : 4; // from 0x0 to 0xA - charging, 0xB - charged
-    uint8_t Usb_plugged : 1;
-    uint8_t Headphones  : 1;
-    uint8_t Microphone  : 1;
-    uint8_t Padding     : 1;
-    uint8_t Reserved2[2];        // Unknown
-    uint8_t TPpack;              // number of trackpad packets (0x00 to 0x04)
-    uint8_t PackCounter;         // packet counter
+    uint8_t Reserved3[5];        // Unknown
     uint8_t Finger1ID      : 7;  // counter
     uint8_t nFinger1Active : 1;  // 0 - active, 1 - unactive
     uint16_t Finger1X      : 12; // finger 1 coordinates resolution 1920x943
@@ -279,7 +272,11 @@ struct ds4report
     uint8_t nFinger2Active : 1;
     uint16_t Finger2X      : 12; // finger 2 coordinates resolution 1920x943
     uint16_t Finger2Y      : 12;
-
+    uint8_t Reserved4[12];        // Unknown
+    uint8_t Power       : 4; // from 0x0 to 0xA - charging, 0xB - charged
+    uint8_t Usb_plugged : 1;
+    uint8_t Battery     : 1; // battery level from 0x00 to 0xff
+    uint8_t Padding     : 1;
 } __attribute__((packed));
 
 /**
