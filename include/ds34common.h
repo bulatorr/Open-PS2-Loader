@@ -276,12 +276,12 @@ struct ds4report
     uint8_t Reserved5[14];        // Unknown
     uint8_t Battery      : 4; // battery level from 0x00 to 0xff
     uint8_t Power        : 4; // from 0x0 to 0xA - charging, 0xB - charged
-    uint8_t Reserved6[3] : 1;        // PowerState
+    uint8_t Reserved6[3];        // PowerState
     uint8_t Usb_plugged  : 1;
     uint8_t Reserved7    : 3;
-    uint8_t Reserved8[2] : 1;
+    uint8_t Reserved8[2];
     uint8_t Reserved9    : 6;
-    uint8_t[8] Padding;
+    uint8_t Padding[11];
 } __attribute__((packed));
 
 /**
