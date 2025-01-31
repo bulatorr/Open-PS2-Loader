@@ -254,16 +254,17 @@ struct ds4report
     uint8_t R3       : 1;
     uint8_t PSButton : 1;
     uint8_t TPad     : 1;
-    uint8_t Microphone  : 1;
-    uint8_t Counter2;
-    uint8_t Reserved2[5];        // Unknown
+    uint8_t Microphone : 1;
+    uint8_t Reserved2 : 1;        // Unknown
+    uint32_t Counter2;
     int16_t GyroX;
     int16_t GyroY;
     int16_t GyroZ;
     int16_t AccelX;
     int16_t AccelY;
     int16_t AccelZ;
-    uint8_t Reserved3[5];        // Unknown
+    uint32_t Reserved3;        // sensorTimestamp
+    uint8_t Reserved4;        // Temperature
     uint8_t Finger1ID      : 7;  // counter
     uint8_t nFinger1Active : 1;  // 0 - active, 1 - unactive
     uint16_t Finger1X      : 12; // finger 1 coordinates resolution 1920x943
@@ -272,11 +273,15 @@ struct ds4report
     uint8_t nFinger2Active : 1;
     uint16_t Finger2X      : 12; // finger 2 coordinates resolution 1920x943
     uint16_t Finger2Y      : 12;
-    uint8_t Reserved4[12];        // Unknown
-    uint8_t Power       : 4; // from 0x0 to 0xA - charging, 0xB - charged
-    uint8_t Usb_plugged : 1;
-    uint8_t Battery     : 1; // battery level from 0x00 to 0xff
-    uint8_t Padding     : 1;
+    uint8_t Reserved5[14];        // Unknown
+    uint8_t Battery      : 4; // battery level from 0x00 to 0xff
+    uint8_t Power        : 4; // from 0x0 to 0xA - charging, 0xB - charged
+    uint8_t Reserved6[3] : 1;        // PowerState
+    uint8_t Usb_plugged  : 1;
+    uint8_t Reserved7    : 3;
+    uint8_t Reserved8[2] : 1;
+    uint8_t Reserved9    : 6;
+    uint8_t[8] Padding;
 } __attribute__((packed));
 
 /**
