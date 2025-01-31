@@ -12,6 +12,8 @@ IMPORT_BIN2C(audsrv_irx);
 
 IMPORT_BIN2C(bdm_irx);
 
+IMPORT_BIN2C(bdm_ata_cdvdman_irx);
+
 IMPORT_BIN2C(bdm_cdvdman_irx);
 
 IMPORT_BIN2C(bdm_mcemu_irx);
@@ -83,6 +85,8 @@ IMPORT_BIN2C(f2techioppatch_irx);
 IMPORT_BIN2C(padman_irx);
 
 IMPORT_BIN2C(poweroff_irx);
+
+IMPORT_BIN2C(ppctty_irx);
 
 IMPORT_BIN2C(ps2atad_irx);
 

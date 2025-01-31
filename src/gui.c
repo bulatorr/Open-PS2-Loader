@@ -145,6 +145,7 @@ void guiInit(void)
     gBackgroundTex.Vram = 0;
     gBackgroundTex.VramClut = 0;
     gBackgroundTex.Clut = NULL;
+    gBackgroundTex.ClutStorageMode = GS_CLUT_STORAGE_CSM1;
 
     // Precalculate the values for the perlin noise plasma
     int i;
@@ -206,6 +207,7 @@ void guiShowAbout()
     diaSetLabel(diaAbout, ABOUT_TITLE, OPLVersion);
 
     snprintf(OPLBuildDetails, sizeof(OPLBuildDetails), "GSM %s"
+                                                       " - UDMA+"
 #ifdef __RTL
                                                        " - RTL"
 #endif
@@ -441,11 +443,14 @@ static void guiShowBlockDeviceConfig(void)
 
     diaSetInt(diaBlockDevicesConfig, CFG_ENABLEILK, gEnableILK);
     diaSetInt(diaBlockDevicesConfig, CFG_ENABLEMX4SIO, gEnableMX4SIO);
+    diaSetEnabled(diaBlockDevicesConfig, CFG_ENABLEBDMHDD, !gHDDStartMode);
+    diaSetInt(diaBlockDevicesConfig, CFG_ENABLEBDMHDD, gEnableBdmHDD);
 
     ret = diaExecuteDialog(diaBlockDevicesConfig, -1, 1, NULL);
     if (ret) {
         diaGetInt(diaBlockDevicesConfig, CFG_ENABLEILK, &gEnableILK);
         diaGetInt(diaBlockDevicesConfig, CFG_ENABLEMX4SIO, &gEnableMX4SIO);
+        diaGetInt(diaBlockDevicesConfig, CFG_ENABLEBDMHDD, &gEnableBdmHDD);
     }
 }
 
@@ -464,10 +469,43 @@ static int guiUpdater(int modified)
     return 0;
 }
 
+int guiDeviceTypeToIoMode(int deviceType)
+{
+    // Translates an index into deviceNames into an IO mode index used internally.
+    if (deviceType == 0)
+        return BDM_MODE;
+    else if (deviceType == 1)
+        return ETH_MODE;
+    else if (deviceType == 2)
+        return HDD_MODE;
+    else
+        return APP_MODE;
+}
+
+int guiIoModeToDeviceType(int ioMode)
+{
+    switch (ioMode) {
+        case BDM_MODE:
+        case BDM_MODE1:
+        case BDM_MODE2:
+        case BDM_MODE3:
+        case BDM_MODE4:
+            return 0;
+        case ETH_MODE:
+            return 1;
+        case HDD_MODE:
+            return 2;
+        case APP_MODE:
+            return 3;
+        default:
+            return 0;
+    }
+}
+
 void guiShowConfig()
 {
     // configure the enumerations
-    const char *deviceNames[] = {_l(_STR_BDM_GAMES), _l(_STR_NET_GAMES), _l(_STR_HDD_GAMES), NULL};
+    const char *deviceNames[] = {_l(_STR_BDM_GAMES), _l(_STR_NET_GAMES), _l(_STR_HDD_GAMES), _l(_STR_APPS), NULL};
     const char *deviceModes[] = {_l(_STR_OFF), _l(_STR_MANUAL), _l(_STR_AUTO), NULL};
 
     diaSetEnum(diaConfig, CFG_DEFDEVICE, deviceNames);
@@ -493,9 +531,11 @@ void guiShowConfig()
     diaSetVisible(diaConfig, CFG_AUTOSTARTLAST, gRememberLastPlayed);
     diaSetVisible(diaConfig, CFG_LBL_AUTOSTARTLAST, gRememberLastPlayed);
 
-    diaSetInt(diaConfig, CFG_DEFDEVICE, gDefaultDevice);
+    int deviceModeIndex = guiIoModeToDeviceType(gDefaultDevice);
+    diaSetInt(diaConfig, CFG_DEFDEVICE, deviceModeIndex);
     diaSetInt(diaConfig, CFG_BDMMODE, gBDMStartMode);
     diaSetVisible(diaConfig, BLOCKDEVICE_BUTTON, gBDMStartMode);
+    diaSetEnabled(diaConfig, CFG_HDDMODE, !gEnableBdmHDD);
     diaSetInt(diaConfig, CFG_HDDMODE, gHDDStartMode);
     diaSetInt(diaConfig, CFG_ETHMODE, gETHStartMode);
     diaSetInt(diaConfig, CFG_APPMODE, gAPPStartMode);
@@ -513,7 +553,8 @@ void guiShowConfig()
         diaGetInt(diaConfig, CFG_LASTPLAYED, &gRememberLastPlayed);
         diaGetInt(diaConfig, CFG_AUTOSTARTLAST, &gAutoStartLastPlayed);
         DisableCron = 1; // Disable Auto Start Last Played counter (we don't want to call it right after enable it on GUI)
-        diaGetInt(diaConfig, CFG_DEFDEVICE, &gDefaultDevice);
+        diaGetInt(diaConfig, CFG_DEFDEVICE, &deviceModeIndex);
+        gDefaultDevice = guiDeviceTypeToIoMode(deviceModeIndex);
         diaGetInt(diaConfig, CFG_HDDMODE, &gHDDStartMode);
         diaGetInt(diaConfig, CFG_ETHMODE, &gETHStartMode);
         diaGetInt(diaConfig, CFG_APPMODE, &gAPPStartMode);
@@ -524,7 +565,7 @@ void guiShowConfig()
         if (ret == BLOCKDEVICE_BUTTON)
             guiShowBlockDeviceConfig();
 
-        applyConfig(-1, -1);
+        applyConfig(-1, -1, 0);
         menuReinitMainMenu();
     }
 }
@@ -619,6 +660,8 @@ void guiShowUIConfig(void)
         , "EDTV 704x576p @50Hz 24bit (HIRES)"
         , "HDTV 1280x720p @60Hz 16bit (HIRES)"
         , "HDTV 1920x1080i @60Hz 16bit (HIRES)"
+        , "PAL 640x256p @50Hz 24bit"
+        , "NTSC 640x224p @60Hz 24bit"
         , NULL};
     // clang-format on
     int previousVMode;
@@ -669,7 +712,7 @@ reselect_video_mode:
         if (previousTheme != themeID && isBgmPlaying())
             bgmStop();
 
-        applyConfig(themeID, langID);
+        applyConfig(themeID, langID, 1);
         sfxInit(0);
 
         if (gEnableBGM && !isBgmPlaying())
@@ -680,7 +723,7 @@ reselect_video_mode:
         if (guiConfirmVideoMode() == 0) {
             // Restore previous video mode, without changing the theme & language settings.
             gVMode = previousVMode;
-            applyConfig(themeID, langID);
+            applyConfig(themeID, langID, 1);
             goto reselect_video_mode;
         }
     }
@@ -796,7 +839,7 @@ void guiShowNetConfig(void)
         if (result == NETCFG_RECONNECT && gNetworkStartup < ERROR_ETH_SMB_CONN)
             gNetworkStartup = ERROR_ETH_SMB_LOGON;
 
-        applyConfig(-1, -1);
+        applyConfig(-1, -1, 0);
     }
 }
 
@@ -876,16 +919,23 @@ void guiShowControllerConfig(void)
     // configure the enumerations
     const char *scrollSpeeds[] = {_l(_STR_SLOW), _l(_STR_MEDIUM), _l(_STR_FAST), NULL};
     const char *selectButtons[] = {_l(_STR_CIRCLE), _l(_STR_CROSS), NULL};
+    const char *sensitivity[] = {_l(_STR_LOW), _l(_STR_MEDIUM), _l(_STR_HIGH), NULL};
 
     diaSetEnum(diaControllerConfig, UICFG_SCROLL, scrollSpeeds);
     diaSetEnum(diaControllerConfig, CFG_SELECTBUTTON, selectButtons);
+    diaSetEnum(diaControllerConfig, CFG_XSENSITIVITY, sensitivity);
+    diaSetEnum(diaControllerConfig, CFG_YSENSITIVITY, sensitivity);
 
     diaSetInt(diaControllerConfig, UICFG_SCROLL, gScrollSpeed);
     diaSetInt(diaControllerConfig, CFG_SELECTBUTTON, gSelectButton == KEY_CIRCLE ? 0 : 1);
+    diaSetInt(diaControllerConfig, CFG_XSENSITIVITY, gXSensitivity);
+    diaSetInt(diaControllerConfig, CFG_YSENSITIVITY, gYSensitivity);
 
     int result = diaExecuteDialog(diaControllerConfig, -1, 1, NULL);
     if (result) {
         diaGetInt(diaControllerConfig, UICFG_SCROLL, &gScrollSpeed);
+        diaGetInt(diaControllerConfig, CFG_XSENSITIVITY, &gXSensitivity);
+        diaGetInt(diaControllerConfig, CFG_YSENSITIVITY, &gYSensitivity);
 
         if (diaGetInt(diaControllerConfig, CFG_SELECTBUTTON, &value))
             gSelectButton = value == 0 ? KEY_CIRCLE : KEY_CROSS;
@@ -898,7 +948,7 @@ void guiShowControllerConfig(void)
             guiGameShowPadMacroConfig(1);
         }
 #endif
-        applyConfig(-1, -1);
+        applyConfig(-1, -1, 1);
     }
 }
 
@@ -1792,4 +1842,81 @@ int guiGameShowRemoveSettings(config_set_t *configSet, config_set_t *configGame)
     guiMsgBox(message, 0, NULL);
 
     return 1;
+}
+
+void guiManageCheats(void)
+{
+    int offset = 0;
+    int terminate = 0;
+    int cheatCount = 0;
+    int selectedCheat = 0;
+    int visibleCheats = 10; // Maximum number of cheats visible on screen
+
+    while (cheatCount < MAX_CODES && strlen(gCheats[cheatCount].name) > 0)
+        cheatCount++;
+
+    sfxPlay(SFX_MESSAGE);
+
+    while (!terminate) {
+        guiStartFrame();
+        readPads();
+
+        if (getKeyOn(KEY_UP) && selectedCheat > 0) {
+            selectedCheat -= 1;
+            if (selectedCheat < offset)
+                offset = selectedCheat;
+        }
+
+        if (getKeyOn(KEY_DOWN) && selectedCheat < cheatCount - 1) {
+            selectedCheat += 1;
+            if (selectedCheat >= offset + visibleCheats)
+                offset = selectedCheat - visibleCheats + 1;
+        }
+
+        if (getKeyOn(gSelectButton)) {
+            if (!(strncasecmp(gCheats[selectedCheat].name, "mastercode", 10) == 0 || strncasecmp(gCheats[selectedCheat].name, "master code", 11) == 0))
+                gCheats[selectedCheat].enabled = !gCheats[selectedCheat].enabled;
+        }
+
+        if (getKeyOn(KEY_START))
+            terminate = 1;
+
+        guiShow();
+
+        rmDrawRect(0, 0, screenWidth, screenHeight, gColDarker);
+        rmDrawLine(50, 75, screenWidth - 50, 75, gColWhite);
+        rmDrawLine(50, 410, screenWidth - 50, 410, gColWhite);
+
+        fntRenderString(gTheme->fonts[0], screenWidth >> 1, 60, ALIGN_CENTER, 0, 0, _l(_STR_CHEAT_SELECTION), gTheme->textColor);
+
+        int renderedCheats = 0;
+        for (int i = offset; renderedCheats < visibleCheats && i < cheatCount; i++) {
+            if (strlen(gCheats[i].name) == 0)
+                continue;
+
+            int enabled = gCheats[i].enabled;
+
+            int boxX = 50;
+            int boxY = 100 + (renderedCheats * 30);
+            int boxWidth = rmWideScale(25);
+            int boxHeight = 17;
+
+            if (enabled) {
+                rmDrawRect(boxX, boxY + 3, boxWidth, boxHeight, gTheme->textColor);
+                rmDrawRect(boxX + 2, boxY + 5, boxWidth - 4, boxHeight - 4, gTheme->selTextColor);
+            }
+
+            u32 textColour = (i == selectedCheat) ? gTheme->selTextColor : gTheme->textColor;
+            fntRenderString(gTheme->fonts[0], boxX + 35, boxY + 3, ALIGN_LEFT, 0, 0, gCheats[i].name, textColour);
+
+            renderedCheats++;
+        }
+
+        guiDrawIconAndText(gSelectButton == KEY_CIRCLE ? CIRCLE_ICON : CROSS_ICON, _STR_SELECT, gTheme->fonts[0], 70, 417, gTheme->selTextColor);
+        guiDrawIconAndText(START_ICON, _STR_RUN, gTheme->fonts[0], 500, 417, gTheme->selTextColor);
+
+        guiEndFrame();
+    }
+
+    sfxPlay(SFX_CONFIRM);
 }

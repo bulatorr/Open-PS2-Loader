@@ -37,7 +37,7 @@ static void cacheLoadImage(void *data)
     GSTEXTURE *texture = &req->entry->texture;
     texFree(texture);
 
-    if (handler->itemGetImage(req->cache->prefix, req->cache->isPrefixRelative, req->value, req->cache->suffix, texture, GS_PSM_CT24) < 0)
+    if (handler->itemGetImage(handler, req->cache->prefix, req->cache->isPrefixRelative, req->value, req->cache->suffix, texture, GS_PSM_CT24) < 0)
         req->entry->lastUsed = 0;
     else
         req->entry->lastUsed = guiFrameId;
@@ -71,6 +71,7 @@ static void cacheClearItem(cache_entry_t *item, int freeTxt)
     item->texture.Vram = 0;
     item->texture.Clut = NULL;
     item->texture.VramClut = 0;
+    item->texture.ClutStorageMode = GS_CLUT_STORAGE_CSM1; // Default
     item->qr = NULL;
     item->lastUsed = -1;
     item->UID = 0;
