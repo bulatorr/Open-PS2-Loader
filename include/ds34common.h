@@ -231,55 +231,56 @@ enum DS4DpadDirections {
 struct ds4report
 {
     uint8_t ReportID;
-    uint8_t Reserved1;    // Unknown
-    uint8_t LeftStickX;   // left Joystick X axis 0 - 255, 128 is mid
-    uint8_t LeftStickY;   // left Joystick Y axis 0 - 255, 128 is mid
-    uint8_t RightStickX;  // right Joystick X axis 0 - 255, 128 is mid
-    uint8_t RightStickY;  // right Joystick Y axis 0 - 255, 128 is mid
-    uint8_t PressureL2;   // digital Pad L2 button Pressure 0 - 255
-    uint8_t PressureR2;   // digital Pad R2 button Pressure 0 - 255
-    uint8_t Counter1; // counts up by 1 per report
-    uint8_t Dpad     : 4; // hat format, 0x08 is released, 0=N, 1=NE, 2=E, 3=SE, 4=S, 5=SW, 6=W, 7=NW
-    uint8_t Square   : 1;
-    uint8_t Cross    : 1;
-    uint8_t Circle   : 1;
-    uint8_t Triangle : 1;
-    uint8_t L1       : 1;
-    uint8_t R1       : 1;
-    uint8_t L2       : 1;
-    uint8_t R2       : 1;
-    uint8_t Share    : 1;
-    uint8_t Option   : 1;
-    uint8_t L3       : 1;
-    uint8_t R3       : 1;
-    uint8_t PSButton : 1;
-    uint8_t TPad     : 1;
+    uint8_t LeftStickX;
+    uint8_t LeftStickY;
+    uint8_t RightStickX;
+    uint8_t RightStickY;
+    uint8_t PressureL2;
+    uint8_t PressureR2;
+    uint8_t Counter1;
+    uint8_t Dpad       : 4;
+    uint8_t Square     : 1;
+    uint8_t Cross      : 1;
+    uint8_t Circle     : 1;
+    uint8_t Triangle   : 1;
+    uint8_t L1         : 1;
+    uint8_t R1         : 1;
+    uint8_t L2         : 1;
+    uint8_t R2         : 1;
+    uint8_t Share      : 1;
+    uint8_t Option     : 1;
+    uint8_t L3         : 1;
+    uint8_t R3         : 1;
+    uint8_t PSButton   : 1;
+    uint8_t TPad       : 1;
     uint8_t Microphone : 1;
-    uint8_t Reserved2 : 1;        // Unknown
-    uint32_t Counter2;
+    uint8_t Reserved2  : 1; // UNK1
+    uint8_t Reserved3  : 4; // DualSense Edge buttons
+    uint8_t Reserved4;      // UNK2
+    uint32_t Counter2;      // UNK_COUNTER
     int16_t GyroX;
     int16_t GyroY;
     int16_t GyroZ;
     int16_t AccelX;
     int16_t AccelY;
     int16_t AccelZ;
-    uint32_t Reserved3;        // sensorTimestamp
-    uint8_t Reserved4;        // Temperature
+    uint32_t SensorTimestamp;     // sensorTimestamp
+    uint8_t Temperature;          // Temperature
     uint32_t Finger1ID      : 7;  // counter
     uint32_t nFinger1Active : 1;  // 0 - active, 1 - unactive
-    uint32_t Finger1X      : 12; // finger 1 coordinates resolution 1920x943
-    uint32_t Finger1Y      : 12;
+    uint32_t Finger1X       : 12; // finger 1 coordinates resolution 1920x943
+    uint32_t Finger1Y       : 12;
     uint32_t Finger2ID      : 7;
     uint32_t nFinger2Active : 1;
-    uint32_t Finger2X      : 12; // finger 2 coordinates resolution 1920x943
-    uint32_t Finger2Y      : 12;
-    uint8_t Reserved5[12];        // Unknown
-    uint8_t Battery      : 4; // battery level from 0x00 to 0xff
-    uint8_t Power        : 4; // from 0x0 to 0xA - charging, 0xB - charged
-    uint8_t Reserved6    : 4;        // PowerState
-    uint8_t Usb_plugged  : 1;
-    uint8_t Reserved7    : 3;
-    uint8_t Reserved8[9];
+    uint32_t Finger2X       : 12; // finger 2 coordinates resolution 1920x943
+    uint32_t Finger2Y       : 12;
+    uint8_t Reserved7[12];   // Adaptive triggers
+    uint8_t Battery     : 4; // battery level from 0x00 to 0xff
+    uint8_t Power       : 4; // from 0x0 to 0xA - charging, 0xB - charged
+    uint8_t Reserved8   : 4; // PowerState
+    uint8_t Usb_plugged : 1;
+    uint8_t Reserved9   : 3;
+    uint8_t Reserved10[9];
 } __attribute__((packed));
 
 /**
