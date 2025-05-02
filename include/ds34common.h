@@ -265,23 +265,21 @@ struct ds4report
     int16_t AccelZ;
     uint32_t Reserved3;        // sensorTimestamp
     uint8_t Reserved4;        // Temperature
-    uint8_t Finger1ID      : 7;  // counter
-    uint8_t nFinger1Active : 1;  // 0 - active, 1 - unactive
-    uint16_t Finger1X      : 12; // finger 1 coordinates resolution 1920x943
-    uint16_t Finger1Y      : 12;
-    uint8_t Finger2ID      : 7;
-    uint8_t nFinger2Active : 1;
-    uint16_t Finger2X      : 12; // finger 2 coordinates resolution 1920x943
-    uint16_t Finger2Y      : 12;
-    uint8_t Reserved5[14];        // Unknown
+    uint32_t Finger1ID      : 7;  // counter
+    uint32_t nFinger1Active : 1;  // 0 - active, 1 - unactive
+    uint32_t Finger1X      : 12; // finger 1 coordinates resolution 1920x943
+    uint32_t Finger1Y      : 12;
+    uint32_t Finger2ID      : 7;
+    uint32_t nFinger2Active : 1;
+    uint32_t Finger2X      : 12; // finger 2 coordinates resolution 1920x943
+    uint32_t Finger2Y      : 12;
+    uint8_t Reserved5[12];        // Unknown
     uint8_t Battery      : 4; // battery level from 0x00 to 0xff
     uint8_t Power        : 4; // from 0x0 to 0xA - charging, 0xB - charged
-    uint8_t Reserved6[3];        // PowerState
+    uint8_t Reserved6    : 4;        // PowerState
     uint8_t Usb_plugged  : 1;
     uint8_t Reserved7    : 3;
-    uint8_t Reserved8[2];
-    uint8_t Reserved9    : 6;
-    uint8_t Padding[11];
+    uint8_t Reserved8[9];
 } __attribute__((packed));
 
 /**
