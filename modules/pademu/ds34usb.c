@@ -87,7 +87,7 @@ int usb_probe(int devId)
         return 1;
     }
 
-    if (device->idVendor == DS34_VID && (device->idProduct == DS3_PID || device->idProduct == DS4_PID || device->idProduct == DS4_PID_SLIM))
+    if (device->idVendor == DS34_VID && (device->idProduct == DS3_PID || device->idProduct == DS4_PID || device->idProduct == DS4_PID_SLIM || device->idProduct == DS5_PID))
         return 1;
 
     return 0;
@@ -134,6 +134,9 @@ int usb_connect(int devId)
     } else if (device->idProduct == ROCK_BAND_PS3_PID) {
         ds34pad[pad].type = GUITAR_RB;
         epCount = interface->bNumEndpoints - 1;
+    } else if (device->idProduct == DS5_PID) {
+        ds34pad[pad].type = DS5;
+        epCount = 20; // ds4 v2 returns interface->bNumEndpoints as 0
     } else {
         ds34pad[pad].type = DS4;
         epCount = 20; // ds4 v2 returns interface->bNumEndpoints as 0
@@ -242,7 +245,7 @@ static void usb_config_set(int result, int count, void *arg)
         DelayThread(10000);
         led[0] = led_patterns[pad][1];
         led[3] = 0;
-    } else if (ds34pad[pad].type == DS4) {
+    } else if (ds34pad[pad].type == DS4 || ds34pad[pad].type == DS5) {
         led[0] = rgbled_patterns[pad][1][0];
         led[1] = rgbled_patterns[pad][1][1];
         led[2] = rgbled_patterns[pad][1][2];
@@ -356,6 +359,42 @@ static void readReport(u8 *data, int pad_idx)
                 pad->oldled[3] = 1;
             else
                 pad->oldled[3] = 0;
+        } else if (pad->type == DS5) {
+            struct ds5report *report;
+            report = (struct ds5report *)data;
+            translate_pad_ds5(report, &pad->ds2, 1);
+            padMacroPerform(&pad->ds2, report->PSButton);
+
+            if (report->PSButton) {                                    // display battery level
+                if (report->Create && (pad->btn_delay == MAX_DELAY)) { // PS + Create
+                    if (pad->analog_btn < 2)                           // unlocked mode
+                        pad->analog_btn = !pad->analog_btn;
+
+                    pad->oldled[0] = rgbled_patterns[pad_idx][(pad->analog_btn & 1)][0];
+                    pad->oldled[1] = rgbled_patterns[pad_idx][(pad->analog_btn & 1)][1];
+                    pad->oldled[2] = rgbled_patterns[pad_idx][(pad->analog_btn & 1)][2];
+                    pad->btn_delay = 1;
+                } else {
+                    pad->oldled[0] = report->Battery;
+                    pad->oldled[1] = 0;
+                    pad->oldled[2] = 0;
+
+                    if (pad->btn_delay < MAX_DELAY)
+                        pad->btn_delay++;
+                }
+            } else {
+                pad->oldled[0] = rgbled_patterns[pad_idx][(pad->analog_btn & 1)][0];
+                pad->oldled[1] = rgbled_patterns[pad_idx][(pad->analog_btn & 1)][1];
+                pad->oldled[2] = rgbled_patterns[pad_idx][(pad->analog_btn & 1)][2];
+
+                if (pad->btn_delay > 0)
+                    pad->btn_delay--;
+            }
+
+            if (report->Power != 0xB && report->Usb_plugged) // charging
+                pad->oldled[3] = 1;
+            else
+                pad->oldled[3] = 0;
         }
         if (pad->btn_delay > 0) {
             pad->update_rum = 1;
@@ -403,6 +442,23 @@ static int LEDRumble(u8 *led, u8 lrum, u8 rrum, int pad)
 
         if (led[3]) // means charging, so blink
         {
+            usb_buf[9] = 0x80;  // Time to flash bright (255 = 2.5 seconds)
+            usb_buf[10] = 0x80; // Time to flash dark (255 = 2.5 seconds)
+        }
+
+        ret = UsbInterruptTransfer(ds34pad[pad].outEndp, usb_buf, 32, usb_cmd_cb, (void *)pad);
+    } else if (ds34pad[pad].type == DS5) {
+        usb_buf[0] = 0x02;
+        usb_buf[1] = 0xFF;
+
+        usb_buf[4] = rrum; // ds5 has full control
+        usb_buf[5] = lrum;
+
+        usb_buf[6] = led[0]; // r
+        usb_buf[7] = led[1]; // g
+        usb_buf[8] = led[2]; // b
+
+        if (led[3]) {           // means charging, so blink
             usb_buf[9] = 0x80;  // Time to flash bright (255 = 2.5 seconds)
             usb_buf[10] = 0x80; // Time to flash dark (255 = 2.5 seconds)
         }
