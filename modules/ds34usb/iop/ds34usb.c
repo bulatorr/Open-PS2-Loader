@@ -432,7 +432,7 @@ static int LEDRumble(u8 *led, u8 lrum, u8 rrum, int pad)
 
         ret = UsbControlTransfer(ds34pad[pad].controlEndp, REQ_USB_OUT, USB_REQ_SET_REPORT, (HID_USB_SET_REPORT_OUTPUT << 8) | 0x01, 0, sizeof(output_01_report), usb_buf, usb_cmd_cb, (void *)pad);
     } else if (ds34pad[pad].type == DS4) {
-        usb_buf[0] = 0x05;
+        usb_buf[0] = 0x02;
         usb_buf[1] = 0xFF;
 
         usb_buf[4] = rrum; // ds4 has full control
@@ -586,13 +586,13 @@ int ds34usb_get_bdaddr(u8 *data, int port)
             ret = 0;
         }
     } else {
-        ret = UsbControlTransfer(ds34pad[port].controlEndp, REQ_USB_IN, USB_REQ_GET_REPORT, (HID_USB_GET_REPORT_FEATURE << 8) | 0x12, 0, 16, usb_buf, usb_cmd_cb, (void *)port);
+        ret = UsbControlTransfer(ds34pad[port].controlEndp, REQ_USB_IN, USB_REQ_GET_REPORT, (HID_USB_GET_REPORT_FEATURE << 8) | 0x09, 0, 8, usb_buf, usb_cmd_cb, (void *)port);
 
         if (ret == USB_RC_OK) {
             TransferWait(ds34pad[port].cmd_sema);
 
             for (i = 0; i < 6; i++)
-                data[5 - i] = usb_buf[15 - i];
+                data[5 - i] = usb_buf[2 + i];
 
             ret = 1;
         } else {
